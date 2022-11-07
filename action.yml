@@ -1,0 +1,58 @@
+name: 'Create GitHub Release'
+description: 'Creates github release with a given tag and release notes'
+author: 'Saber Ouechtati'
+inputs:
+  tag:
+    description: 'An optional tag for the release. If this is omitted the git ref will be used (if it is a tag).'
+    required: false
+    default: 'v1.0.0'
+  releaseNotesPath:
+    description: 'An optional release notes file. This should be the path to the file'
+    required: false
+    default: ''
+  username:
+    description: 'The GitHub username'
+    required: false
+    default: ${{ secrets.ACTIONS_GITHUB_USERNAME }}
+  token:
+    description: 'The GitHub token.'
+    required: false
+    default: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
+outputs:
+  id:
+    description: 'The identifier of the created release.'
+  html_url:
+    description: 'The HTML URL of the release.'
+  upload_url:
+    description: 'The URL for uploading assets to the release.'
+runs:
+  using: "composite"
+  on:
+    pull_request:
+      types:
+        - closed
+      branches:
+        - master
+        - main
+  jobs:
+    GitHub-Release:
+      name: Create a GitHub release from master or main
+      if: contains(github.event.pull_request.labels.*.name, 'Release')
+      runs-on: self-hosted
+      permissions:
+        contents: write
+      env:
+        ACTIONS_GITHUB_USERNAME: ${{ inputs.username}}
+        ACTIONS_GITHUB_TOKEN: ${{ inputs.token }}
+      steps:
+        - name: Check-out the repository under $GITHUB_WORKSPACE
+          uses: actions/checkout@v2.4.2
+   
+        - name: Release
+          uses: ncipollo/release-action@v1.10.0
+          with:
+            name: ${{ inputs.tag }}
+            tag: ${{ inputs.tag }}
+            token: ${{ inputs.token }}
+            bodyFile: ${{ inputs.releaseNotesPath }}
+
